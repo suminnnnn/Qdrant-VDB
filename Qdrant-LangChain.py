@@ -117,3 +117,82 @@ scroll_filter = models.Filter(
         models.FieldCondition(key="file_id", match=models.MatchValue(value=1))
     ]
 )
+
+# Point Delete
+
+# 삭제하고자 하는 file_id를 가지는 Point 들의 Point id 조회
+points = client.scroll(collection_name=collection_name, scroll_filter=scroll_filter)[0]
+
+point_ids = [point.id for point in points]
+
+# vector 삭제
+client.delete_vectors(collection_name=collection_name, wait=True, points=point_ids, vectors=[''])
+
+# point 삭제
+client.delete(collection_name=collection_name, wait=True, points_selector=point_ids)
+
+# Point Update
+
+point_selector = models.FilterSelector(
+                    filter=models.Filter(
+                        must=[
+                            models.FieldCondition(
+                                key='file_id',
+                                match=models.MatchValue(value=1),
+                            ),
+                        ],
+                    )
+                )
+
+scroll_filter = models.Filter(
+    must=[
+        models.FieldCondition(key="file_id", match=models.MatchValue(value=1))
+    ]
+)
+
+# 업데이트 할 파일의 point 조회
+
+points = client.scroll(collection_name=collection_name, scroll_filter=scroll_filter)[0]
+
+point_ids = [point.id for point in points]
+
+# 기존 Point 삭제
+
+client.delete_vectors(collection_name=collection_name, wait=True, points=point_ids, vectors=[''])
+client.delete(collection_name=collection_name, wait=True, points_selector=point_ids)
+
+# 새로운 Point 저장
+
+loader = TextLoader("./AboutDocker.txt", encoding="UTF-8")
+data = loader.load()
+docs = text_splitter.split_text(data[0].page_content)
+
+points = []
+
+for idx, doc in enumerate(docs):
+    
+    print(f'{idx=}')
+    print(f'{doc=}')
+
+    print(f'{len(doc)=}')
+    print()
+    vector = encoder.encode(doc)
+        
+    point = models.PointStruct(
+        id = ((idx +2) * pow(31, idx)) % 1234567891 ,
+        vector=vector,
+        payload={
+            "doc_time" : datetime(2022, 2, 21).strftime("%Y%m%d"),
+            "upload_time" : datetime.now().strftime("%Y%m%d"),
+            "file_id" : 3,
+            "parent_department_id" : 2,
+            "sub_department_id" : 1,
+            "manager" : "관리자",
+            "doc" : doc
+        }
+    )
+    
+    points.append(point)
+
+client.upsert(collection_name=collection_name, points=points)
+
