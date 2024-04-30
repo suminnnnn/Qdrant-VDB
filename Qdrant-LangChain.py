@@ -67,7 +67,7 @@ text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
 
 docs = text_splitter.split_text(data[0].page_content)
 
-# 각 청크를 임베딩 후 Point로 저장
+# Point Create
 
 points = []
 
@@ -78,10 +78,11 @@ for idx, doc in enumerate(docs):
 
     print(f'{len(doc)=}')
     print()
-    embedding = model.encode(doc)
+    
+    embedding = encoder.encode(doc)
         
     point = PointStruct(
-        id = idx,
+        id = ((idx +1) * pow(21, idx)) % 1234567891 ,
         vector=embedding,
         payload={
             "doc_time" : datetime(2022, 2, 21).strftime("%Y%m%d"),
@@ -97,5 +98,3 @@ for idx, doc in enumerate(docs):
     points.append(point)
 
 client.upsert(collection_name=collection_name, points=points)
-
-print("Data upload to Qdrant")
