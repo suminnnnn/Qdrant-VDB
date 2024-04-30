@@ -1,14 +1,22 @@
 from sentence_transformers import SentenceTransformer
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import PointStruct, VectorParams, Distance
 
+import tiktoken
+from langchain import hub
 from langchain_community.document_loaders import TextLoader
+from langchain_community.vectorstores import Qdrant
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import ChatOpenAI
+
 
 from datetime import datetime
+import os
 
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+encoder = SentenceTransformer("all-MiniLM-L6-v2")
+
+os.environ["OPENAI_API_KEY"] ='SECRET-KEY'
 
 # Qdrant 클라이언트 초기화
 client = QdrantClient(host="localhost", port=6333)
@@ -18,7 +26,7 @@ collection_name = "langchain_qdrant_test_collection"
 
 client.create_collection(
     collection_name=collection_name,
-    vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+    vectors_config=VectorParams(size=encoder.get_sentence_embedding_dimension(), distance=Distance.COSINE)
 )
 
 # 임베딩할 텍스트 파일 로드
