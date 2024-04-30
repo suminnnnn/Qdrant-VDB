@@ -98,3 +98,22 @@ for idx, doc in enumerate(docs):
     points.append(point)
 
 client.upsert(collection_name=collection_name, points=points)
+
+# Point Delete, Update, Scroll에 사용할 Filter 정의
+
+## file_id 값을 기준으로 검색
+filter = models.Filter(
+                        must=[
+                            models.FieldCondition(
+                                key='file_id',
+                                match=models.MatchValue(value=1),
+                            ),],
+                    )
+
+point_selector = models.FilterSelector(filter=filter)
+
+scroll_filter = models.Filter(
+    must=[
+        models.FieldCondition(key="file_id", match=models.MatchValue(value=1))
+    ]
+)
