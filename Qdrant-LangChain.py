@@ -196,3 +196,29 @@ for idx, doc in enumerate(docs):
 
 client.upsert(collection_name=collection_name, points=points)
 
+# Point Retrieve
+
+user_query = "JPA의 영속성 컨텍스트란?"
+
+query_vector = encoder.encode(user_query).tolist()
+query_filter = models.Filter(must=[models.FieldCondition(key="manager", match=models.MatchValue(value="관리자"))])
+
+hits = client.search(collection_name=collection_name,
+                     query_vector= query_vector, query_filter=query_filter, limit=2)
+
+search_result = hits[1].payload['doc']
+
+context_header = f"context: {search_result}"
+
+user_query = f"\n\nQuery: {user_query}"
+
+query_constraint = "\n\nConstraint: 질문 Query에 대해서 context에 있는 지식 내에서 정확히 일치하는 경우에만 대답 하고, 모르면 모른다고 대답해."
+
+prompt = context_header + user_query + query_constraint
+
+
+llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+
+response = llm.invoke(prompt)
+
+print("A: " + response.content)
